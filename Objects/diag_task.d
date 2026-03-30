@@ -1,0 +1,16 @@
+.\objects\diag_task.o: hardware\diag_task.c
+.\objects\diag_task.o: hardware\diag_task.h
+.\objects\diag_task.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\diag_task.o: .\Freertos\inc\FreeRTOS.h
+.\objects\diag_task.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+.\objects\diag_task.o: .\Freertos\FreeRTOSConfig.h
+.\objects\diag_task.o: .\Freertos\inc\projdefs.h
+.\objects\diag_task.o: .\Freertos\inc\portable.h
+.\objects\diag_task.o: .\Freertos\inc\deprecated_definitions.h
+.\objects\diag_task.o: .\Freertos\port\portmacro.h
+.\objects\diag_task.o: .\Freertos\inc\mpu_wrappers.h
+.\objects\diag_task.o: .\Freertos\inc\task.h
+.\objects\diag_task.o: .\Freertos\inc\list.h
+.\objects\diag_task.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\diag_task.o: hardware\esp01s.h
+.\objects\diag_task.o: hardware\mqtt_app.h

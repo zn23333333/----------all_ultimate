@@ -1,0 +1,315 @@
+version: "4.1"
+name: project
+type: ARM
+deviceName: null
+packDir: .pack/Keil/STM32F4xx_DFP.3.0.0
+srcDirs:
+  - hardware
+virtualFolder:
+  name: <virtual_root>
+  files: []
+  folders:
+    - name: Start
+      files:
+        - path: Start/arm_common_tables.h
+        - path: Start/arm_const_structs.h
+        - path: Start/arm_math.h
+        - path: Start/core_cm4.h
+        - path: Start/core_cmFunc.h
+        - path: Start/core_cmInstr.h
+        - path: Start/core_cmSimd.h
+        - path: Start/core_sc000.h
+        - path: Start/core_sc300.h
+        - path: Start/startup_stm32f40_41xxx.s
+        - path: Start/stm32f4xx.h
+        - path: Start/system_stm32f4xx.h
+      folders: []
+    - name: Library
+      files:
+        - path: Library/misc.c
+        - path: Library/misc.h
+        - path: Library/stm32f4xx_adc.c
+        - path: Library/stm32f4xx_adc.h
+        - path: Library/stm32f4xx_can.c
+        - path: Library/stm32f4xx_can.h
+        - path: Library/stm32f4xx_cec.c
+        - path: Library/stm32f4xx_cec.h
+        - path: Library/stm32f4xx_crc.c
+        - path: Library/stm32f4xx_crc.h
+        - path: Library/stm32f4xx_cryp.c
+        - path: Library/stm32f4xx_cryp.h
+        - path: Library/stm32f4xx_cryp_aes.c
+        - path: Library/stm32f4xx_cryp_des.c
+        - path: Library/stm32f4xx_cryp_tdes.c
+        - path: Library/stm32f4xx_dac.c
+        - path: Library/stm32f4xx_dac.h
+        - path: Library/stm32f4xx_dbgmcu.c
+        - path: Library/stm32f4xx_dbgmcu.h
+        - path: Library/stm32f4xx_dcmi.c
+        - path: Library/stm32f4xx_dcmi.h
+        - path: Library/stm32f4xx_dfsdm.c
+        - path: Library/stm32f4xx_dfsdm.h
+        - path: Library/stm32f4xx_dma.c
+        - path: Library/stm32f4xx_dma.h
+        - path: Library/stm32f4xx_dma2d.c
+        - path: Library/stm32f4xx_dma2d.h
+        - path: Library/stm32f4xx_dsi.c
+        - path: Library/stm32f4xx_dsi.h
+        - path: Library/stm32f4xx_exti.c
+        - path: Library/stm32f4xx_exti.h
+        - path: Library/stm32f4xx_flash.c
+        - path: Library/stm32f4xx_flash.h
+        - path: Library/stm32f4xx_flash_ramfunc.c
+        - path: Library/stm32f4xx_flash_ramfunc.h
+        - path: Library/stm32f4xx_fmpi2c.c
+        - path: Library/stm32f4xx_fmpi2c.h
+        - path: Library/stm32f4xx_fsmc.c
+        - path: Library/stm32f4xx_fsmc.h
+        - path: Library/stm32f4xx_gpio.c
+        - path: Library/stm32f4xx_gpio.h
+        - path: Library/stm32f4xx_hash.c
+        - path: Library/stm32f4xx_hash.h
+        - path: Library/stm32f4xx_hash_md5.c
+        - path: Library/stm32f4xx_hash_sha1.c
+        - path: Library/stm32f4xx_i2c.c
+        - path: Library/stm32f4xx_i2c.h
+        - path: Library/stm32f4xx_iwdg.c
+        - path: Library/stm32f4xx_iwdg.h
+        - path: Library/stm32f4xx_lptim.c
+        - path: Library/stm32f4xx_lptim.h
+        - path: Library/stm32f4xx_ltdc.c
+        - path: Library/stm32f4xx_ltdc.h
+        - path: Library/stm32f4xx_pwr.c
+        - path: Library/stm32f4xx_pwr.h
+        - path: Library/stm32f4xx_qspi.c
+        - path: Library/stm32f4xx_qspi.h
+        - path: Library/stm32f4xx_rcc.c
+        - path: Library/stm32f4xx_rcc.h
+        - path: Library/stm32f4xx_rng.c
+        - path: Library/stm32f4xx_rng.h
+        - path: Library/stm32f4xx_rtc.c
+        - path: Library/stm32f4xx_rtc.h
+        - path: Library/stm32f4xx_sai.c
+        - path: Library/stm32f4xx_sai.h
+        - path: Library/stm32f4xx_sdio.c
+        - path: Library/stm32f4xx_sdio.h
+        - path: Library/stm32f4xx_spdifrx.c
+        - path: Library/stm32f4xx_spdifrx.h
+        - path: Library/stm32f4xx_spi.c
+        - path: Library/stm32f4xx_spi.h
+        - path: Library/stm32f4xx_syscfg.c
+        - path: Library/stm32f4xx_syscfg.h
+        - path: Library/stm32f4xx_tim.c
+        - path: Library/stm32f4xx_tim.h
+        - path: Library/stm32f4xx_usart.c
+        - path: Library/stm32f4xx_usart.h
+        - path: Library/stm32f4xx_wwdg.c
+        - path: Library/stm32f4xx_wwdg.h
+      folders: []
+    - name: Freertos
+      files: []
+      folders:
+        - name: inc
+          files:
+            - path: Freertos/FreeRTOSConfig.h
+            - path: Freertos/inc/atomic.h
+            - path: Freertos/inc/CMakeLists.txt
+            - path: Freertos/inc/croutine.h
+            - path: Freertos/inc/deprecated_definitions.h
+            - path: Freertos/inc/event_groups.h
+            - path: Freertos/inc/FreeRTOS.h
+            - path: Freertos/inc/list.h
+            - path: Freertos/inc/message_buffer.h
+            - path: Freertos/inc/mpu_prototypes.h
+            - path: Freertos/inc/mpu_syscall_numbers.h
+            - path: Freertos/inc/mpu_wrappers.h
+            - path: Freertos/inc/newlib-freertos.h
+            - path: Freertos/inc/picolibc-freertos.h
+            - path: Freertos/inc/portable.h
+            - path: Freertos/inc/projdefs.h
+            - path: Freertos/inc/queue.h
+            - path: Freertos/inc/semphr.h
+            - path: Freertos/inc/stack_macros.h
+            - path: Freertos/inc/StackMacros.h
+            - path: Freertos/inc/stream_buffer.h
+            - path: Freertos/inc/task.h
+            - path: Freertos/inc/timers.h
+          folders: []
+        - name: port
+          files:
+            - path: Freertos/port/heap_4.c
+            - path: Freertos/port/port.c
+            - path: Freertos/port/portmacro.h
+          folders: []
+        - name: src
+          files:
+            - path: Freertos/src/croutine.c
+            - path: Freertos/src/event_groups.c
+            - path: Freertos/src/list.c
+            - path: Freertos/src/queue.c
+            - path: Freertos/src/stream_buffer.c
+            - path: Freertos/src/tasks.c
+            - path: Freertos/src/timers.c
+          folders: []
+    - name: User
+      files:
+        - path: User/main.c
+        - path: User/main.h
+        - path: User/stm32f4xx_conf.h
+        - path: User/stm32f4xx_it.c
+        - path: User/stm32f4xx_it.h
+        - path: User/system_stm32f4xx.c
+      folders: []
+dependenceList: []
+outDir: build
+miscInfo:
+  uid: 9cd285e33565704dc8c3c9ed21fe13de
+targets:
+  Target_1:
+    cppPreprocessAttrs:
+      defineList:
+        - STM32F40_41xxx
+        - USE_STDPERIPH_DRIVER
+      incList:
+        - .
+        - User
+        - Library
+        - Start
+        - Freertos/inc
+        - Freertos/port
+        - Freertos/src
+        - Freertos
+        - .cmsis/include
+        - RTE/_Target_1
+        - hardware
+      libList: []
+    excludeList: []
+    toolchain: AC5
+    toolchainConfigMap:
+      AC5:
+        archExtensions: ""
+        cpuType: Cortex-M4
+        floatingPointHardware: single
+        options:
+          version: 4
+          afterBuildTasks: []
+          asm-compiler: {}
+          beforeBuildTasks: []
+          c/cpp-compiler:
+            CXX_FLAGS: --diag_suppress=1 --diag_suppress=1295
+            C_FLAGS: --diag_suppress=1 --diag_suppress=1295
+            c99-mode: true
+            gnu-extensions: true
+            one-elf-section-per-function: true
+            optimization: level-0
+            warnings: all-warnings
+          global:
+            output-debug-info: enable
+            use-microLIB: true
+          linker:
+            $outputTaskExcludes:
+              - .bin
+            output-format: elf
+            ro-base: "0x08000000"
+            rw-base: "0x20000000"
+        scatterFilePath: ""
+        storageLayout:
+          RAM:
+            - id: 1
+              isChecked: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              noInit: false
+              tag: RAM
+            - id: 2
+              isChecked: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              noInit: false
+              tag: RAM
+            - id: 3
+              isChecked: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              noInit: false
+              tag: RAM
+            - id: 1
+              isChecked: true
+              mem:
+                size: "0x20000"
+                startAddr: "0x20000000"
+              noInit: false
+              tag: IRAM
+            - id: 2
+              isChecked: false
+              mem:
+                size: "0x10000"
+                startAddr: "0x10000000"
+              noInit: false
+              tag: IRAM
+          ROM:
+            - id: 1
+              isChecked: false
+              isStartup: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              tag: ROM
+            - id: 2
+              isChecked: false
+              isStartup: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              tag: ROM
+            - id: 3
+              isChecked: false
+              isStartup: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              tag: ROM
+            - id: 1
+              isChecked: true
+              isStartup: true
+              mem:
+                size: "0x100000"
+                startAddr: "0x8000000"
+              tag: IROM
+            - id: 2
+              isChecked: false
+              isStartup: false
+              mem:
+                size: "0x0"
+                startAddr: "0x0"
+              tag: IROM
+        useCustomScatterFile: false
+    uploadConfigMap:
+      JLink:
+        baseAddr: ""
+        bin: ""
+        cpuInfo:
+          cpuName: "null"
+          vendor: "null"
+        otherCmds: ""
+        proType: 1
+        speed: 8000
+      OpenOCD:
+        baseAddr: "0x08000000"
+        bin: ""
+        interface: stlink
+        target: stm32f4x
+      STLink:
+        address: "0x8000000"
+        bin: ""
+        elFile: None
+        optionBytes: .eide/target_1.st.option.bytes.ini
+        otherCmds: ""
+        proType: SWD
+        resetMode: default
+        runAfterProgram: true
+        speed: 4000
+    uploader: OpenOCD

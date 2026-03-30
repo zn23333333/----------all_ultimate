@@ -1,0 +1,7 @@
+node_modules
+dist
+.vscode
+.DS_Store
+server/data/*.db
+server/data/*.db-wal
+server/data/*.db-shm

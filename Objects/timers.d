@@ -1,0 +1,15 @@
+.\objects\timers.o: Freertos\src\timers.c
+.\objects\timers.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+.\objects\timers.o: .\Freertos\inc\FreeRTOS.h
+.\objects\timers.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+.\objects\timers.o: D:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\timers.o: .\Freertos\FreeRTOSConfig.h
+.\objects\timers.o: .\Freertos\inc\projdefs.h
+.\objects\timers.o: .\Freertos\inc\portable.h
+.\objects\timers.o: .\Freertos\inc\deprecated_definitions.h
+.\objects\timers.o: .\Freertos\port\portmacro.h
+.\objects\timers.o: .\Freertos\inc\mpu_wrappers.h
+.\objects\timers.o: .\Freertos\inc\task.h
+.\objects\timers.o: .\Freertos\inc\list.h
+.\objects\timers.o: .\Freertos\inc\queue.h
+.\objects\timers.o: .\Freertos\inc\timers.h

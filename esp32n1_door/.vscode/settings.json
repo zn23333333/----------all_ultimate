@@ -1,0 +1,26 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.espIdfPathWin": "d:\\espressif\\v5.5.2\\esp-idf",
+  "idf.pythonInstallPath": "D:\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
+  "idf.openOcdConfigs": [
+    "board/esp32-ethernet-kit-3.3v.cfg"
+  ],
+  "idf.portWin": "COM3",
+  "idf.buildPath": "D:\\esp_build\\esp32n1_door",
+  "idf.buildPathWin": "D:\\esp_build\\esp32n1_door",
+  "idf.toolsPathWin": "D:\\.espressif",
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32",
+    "PYTHONUTF8": "1",
+    "CCACHE_DISABLE": "1"
+  },
+  "clangd.path": "D:\\.espressif\\tools\\esp-clang\\esp-19.1.2_20250312\\esp-clang\\bin\\clangd.exe",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=D:\\esp_build\\esp32n1_door"
+  ],
+  "C_Cpp.default.compileCommands": "d:\\esp_build\\esp32n1_door\\compile_commands.json",
+  "idf.flashType": "UART",
+  "idf.currentSetup": "d:\\espressif\\v5.5.2\\esp-idf"
+}

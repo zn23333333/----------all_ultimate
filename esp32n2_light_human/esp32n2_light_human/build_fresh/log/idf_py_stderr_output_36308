@@ -1,0 +1,29 @@
+Command: cmake -G Ninja -DPYTHON_DEPS_CHECKED=1 -DPYTHON=D:\.espressif\python_env\idf5.5_py3.11_env\Scripts\python.exe -DESP_PLATFORM=1 -DCCACHE_ENABLE=0 D:\Desktop\工业车间环境保障系统all_ultimate\esp32n2_light_human\esp32n2_light_human
+Traceback (most recent call last):
+  File "D:\espressif\v5.5.2\esp-idf\tools\kconfig_new\prepare_kconfig_files.py", line 102, in <module>
+    main()
+  File "D:\espressif\v5.5.2\esp-idf\tools\kconfig_new\prepare_kconfig_files.py", line 94, in main
+    env.update(json.load(args.env_file))
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "json\__init__.py", line 293, in load
+UnicodeDecodeError: 'gbk' codec can't decode byte 0xaf in position 3207: illegal multibyte sequence
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\.espressif\python_env\idf5.5_py3.11_env\Lib\site-packages\kconfgen\__main__.py", line 18, in <module>
+    main()
+  File "D:\.espressif\python_env\idf5.5_py3.11_env\Lib\site-packages\kconfgen\core.py", line 721, in main
+    env = json.load(args.env_file)
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "json\__init__.py", line 293, in load
+UnicodeDecodeError: 'gbk' codec can't decode byte 0xaf in position 3207: illegal multibyte sequence
+CMake Error at D:/espressif/v5.5.2/esp-idf/tools/cmake/kconfig.cmake:230 (message):
+  Failed to run kconfgen
+  (D:/.espressif/python_env/idf5.5_py3.11_env/Scripts/python.exe;-m;kconfgen;--list-separator=semicolon;--kconfig;D:/espressif/v5.5.2/esp-idf/Kconfig;--sdkconfig-rename;D:/espressif/v5.5.2/esp-idf/sdkconfig.rename;--config;D:/Desktop/工业车间环境保障系统all_ultimate/esp32n2_light_human/esp32n2_light_human/sdkconfig;--defaults;D:/Desktop/工业车间环境保障系统all_ultimate/esp32n2_light_human/esp32n2_light_human/sdkconfig.defaults;--env;IDF_MINIMAL_BUILD=y;--env-file;D:/Desktop/工业车间环境保障系统all_ultimate/esp32n2_light_human/esp32n2_light_human/build_fresh/config.env).
+  Error 1
+Call Stack (most recent call first):
+  D:/espressif/v5.5.2/esp-idf/tools/cmake/build.cmake:704 (__kconfig_generate_config)
+  D:/espressif/v5.5.2/esp-idf/tools/cmake/project.cmake:740 (idf_build_process)
+  CMakeLists.txt:8 (project)
+
+

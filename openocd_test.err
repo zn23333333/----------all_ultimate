@@ -1,0 +1,27 @@
+Open On-Chip Debugger 0.12.0-rc2-g7a1adfbec (2022-11-06-10:08)
+Licensed under GNU GPL v2
+For bug reports, read
+	http://openocd.org/doc/doxygen/bugs.html
+CDLiveWatchSetup
+Info : auto-selecting first available session transport "hla_swd". To override use 'transport select <transport>'.
+Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+Info : Listening on port 50001 for tcl connections
+Info : Listening on port 50002 for telnet connections
+Info : clock speed 2000 kHz
+Info : STLINK V2J46S7 (API v2) VID:PID 0483:3748
+Info : Target voltage: 3.239841
+Info : [stm32f4x.cpu] Cortex-M4 r0p1 processor detected
+Info : [stm32f4x.cpu] target has 6 breakpoints, 4 watchpoints
+Info : starting gdb server for stm32f4x.cpu on 50000
+Info : Listening on port 50000 for gdb connections
+Info : accepting 'gdb' connection on tcp/50000
+[stm32f4x.cpu] halted due to debug-request, current mode: Thread 
+xPSR: 0x61000000 pc: 0x0800ec56 psp: 0x20005598
+Info : device id = 0x100f6413
+Info : flash size = 1024 KiB
+Info : flash size = 512 bytes
+Info : Unable to match requested speed 2000 kHz, using 1800 kHz
+Info : Unable to match requested speed 2000 kHz, using 1800 kHz
+[stm32f4x.cpu] halted due to debug-request, current mode: Thread 
+xPSR: 0x01000000 pc: 0x080003d4 msp: 0x200162f8
+Info : dropped 'gdb' connection

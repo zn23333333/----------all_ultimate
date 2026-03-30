@@ -1,0 +1,9 @@
+
+
+# Load bootloader symbols
+set confirm off
+    # Bootloader elf was not found
+set confirm on
+
+# Load application symbols
+file D:/Desktop/工业车间环境保障系统all_ultimate/esp32n2_light_human/esp32n2_light_human/build_utf8/bootloader/bootloader.elf

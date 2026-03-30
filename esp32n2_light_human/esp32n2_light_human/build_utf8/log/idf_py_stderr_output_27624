@@ -1,0 +1,16 @@
+Command: cmake -G Ninja -DPYTHON_DEPS_CHECKED=1 -DPYTHON=D:\.espressif\python_env\idf5.5_py3.11_env\Scripts\python.exe -DESP_PLATFORM=1 -DCCACHE_ENABLE=0 D:\Desktop\工业车间环境保障系统all_ultimate\esp32n2_light_human\esp32n2_light_human
+Traceback (most recent call last):
+  File "D:\espressif\v5.5.2\esp-idf\components\esp_rom\gen_gdbinit.py", line 72, in <module>
+    gdbinit_lines = generate_gdbinit_rom_add_symbols(target)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\espressif\v5.5.2\esp-idf\components\esp_rom\gen_gdbinit.py", line 32, in generate_gdbinit_rom_add_symbols
+    raise EnvironmentError(
+OSError: ESP_ROM_ELF_DIR environment variable is not defined. Please try to run IDF "install" and "export" scripts.
+CMake Warning at D:/espressif/v5.5.2/esp-idf/tools/cmake/gdbinit.cmake:52 (message):
+  Error while generating esp_rom gdbinit
+Call Stack (most recent call first):
+  D:/espressif/v5.5.2/esp-idf/tools/cmake/project.cmake:356 (__generate_gdbinit)
+  D:/espressif/v5.5.2/esp-idf/tools/cmake/project.cmake:974 (__project_info)
+  CMakeLists.txt:8 (project)
+
+
