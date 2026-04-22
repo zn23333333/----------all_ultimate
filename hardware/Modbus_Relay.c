@@ -72,6 +72,123 @@ static const uint8_t s_modbus_commands[][6] = {
 /** @brief 命令表总条数，由编译器自动计算 */
 #define MODBUS_COMMAND_COUNT ((uint8_t)(sizeof(s_modbus_commands) / sizeof(s_modbus_commands[0])))
 
+static ModbusDiagSnapshot_t s_last_modbus_diag = {0};
+
+static void Modbus_UpdateLastDiag(ModbusCommand_t cmd,
+                                  ModbusError_t error,
+                                  uint8_t retry_index,
+                                  const uint8_t *response,
+                                  uint8_t response_length)
+{
+    uint8_t preview_len = 0U;
+    uint32_t primask = __get_PRIMASK();
+
+    __disable_irq();
+    s_last_modbus_diag.command = cmd;
+    s_last_modbus_diag.error = error;
+    s_last_modbus_diag.retry_index = retry_index;
+
+    if ((uint8_t)cmd < MODBUS_COMMAND_COUNT)
+    {
+        s_last_modbus_diag.request_addr = s_modbus_commands[cmd][0];
+        s_last_modbus_diag.request_func = s_modbus_commands[cmd][1];
+    }
+    else
+    {
+        s_last_modbus_diag.request_addr = 0U;
+        s_last_modbus_diag.request_func = 0U;
+    }
+
+    s_last_modbus_diag.response_len = response_length;
+    if ((response != NULL) && (response_length > 0U))
+    {
+        s_last_modbus_diag.response_addr = response[0];
+        s_last_modbus_diag.response_func = (response_length > 1U) ? response[1] : 0U;
+        s_last_modbus_diag.response_byte_count = (response_length > 2U) ? response[2] : 0U;
+        preview_len = (response_length < sizeof(s_last_modbus_diag.response_preview)) ?
+                      response_length :
+                      (uint8_t)sizeof(s_last_modbus_diag.response_preview);
+        memcpy(s_last_modbus_diag.response_preview, response, preview_len);
+    }
+    else
+    {
+        s_last_modbus_diag.response_addr = 0U;
+        s_last_modbus_diag.response_func = 0U;
+        s_last_modbus_diag.response_byte_count = 0U;
+    }
+    if (preview_len < sizeof(s_last_modbus_diag.response_preview))
+    {
+        memset(&s_last_modbus_diag.response_preview[preview_len],
+               0,
+               sizeof(s_last_modbus_diag.response_preview) - preview_len);
+    }
+    s_last_modbus_diag.response_preview_len = preview_len;
+
+    if ((primask & 1U) == 0U)
+    {
+        __enable_irq();
+    }
+}
+
+const char *Modbus_CommandName(ModbusCommand_t cmd)
+{
+    switch (cmd)
+    {
+    case CMD_OPEN_CH1: return "open_ch1";
+    case CMD_CLOSE_CH1: return "close_ch1";
+    case CMD_OPEN_CH2: return "open_ch2";
+    case CMD_CLOSE_CH2: return "close_ch2";
+    case CMD_OPEN_CH3: return "open_ch3";
+    case CMD_CLOSE_CH3: return "close_ch3";
+    case CMD_OPEN_CH4: return "open_ch4";
+    case CMD_CLOSE_CH4: return "close_ch4";
+    case CMD_OPEN_CH5: return "open_ch5";
+    case CMD_CLOSE_CH5: return "close_ch5";
+    case CMD_OPEN_CH6: return "open_ch6";
+    case CMD_CLOSE_CH6: return "close_ch6";
+    case CMD_OPEN_CH7: return "open_ch7";
+    case CMD_CLOSE_CH7: return "close_ch7";
+    case CMD_OPEN_CH8: return "open_ch8";
+    case CMD_CLOSE_CH8: return "close_ch8";
+    case CMD_READ_ALL: return "read_all";
+    case CMD_READ_HUMIDITY_TEMPERATURE: return "read_temp_humi";
+    case CMD_READ_PM25_PM10: return "read_pm";
+    case CMD_READ_GAS: return "read_gas";
+    default: return "unknown";
+    }
+}
+
+const char *Modbus_ErrorText(ModbusError_t error)
+{
+    switch (error)
+    {
+    case MODBUS_SUCCESS: return "success";
+    case MODBUS_ERROR_TIMEOUT: return "timeout";
+    case MODBUS_ERROR_CRC: return "crc";
+    case MODBUS_ERROR_RESPONSE: return "response";
+    case MODBUS_ERROR_SERIAL: return "serial";
+    default: return "unknown";
+    }
+}
+
+void Modbus_GetLastDiag(ModbusDiagSnapshot_t *out)
+{
+    uint32_t primask;
+
+    if (out == NULL)
+    {
+        return;
+    }
+
+    primask = __get_PRIMASK();
+    __disable_irq();
+    *out = s_last_modbus_diag;
+    if ((primask & 1U) == 0U)
+    {
+        __enable_irq();
+    }
+}
+
 /**
  * @brief  初始化 Modbus 继电器模块
  * @details 完成以下初始化：
@@ -96,6 +213,8 @@ void Modbus_Relay_Init(void)
  */
 static ModbusError_t ValidateResponse(ModbusCommand_t cmd, uint8_t *response, uint8_t length)
 {
+    uint8_t byte_count;
+
     /* 响应帧至少需要4字节：地址(1) + 功能码(1) + 数据(至少0) + CRC(2) */
     if (length < 4)
     {
@@ -115,6 +234,8 @@ static ModbusError_t ValidateResponse(ModbusCommand_t cmd, uint8_t *response, ui
     }
 
     /* ---- 继电器写入命令的响应校验（功能码0x06，回显整个请求帧） ---- */
+    byte_count = (length > 2U) ? response[2] : 0U;
+
     if (cmd <= CMD_CLOSE_CH8)
     {
         /* 验证从站地址和功能码 */
@@ -140,7 +261,11 @@ static ModbusError_t ValidateResponse(ModbusCommand_t cmd, uint8_t *response, ui
             return MODBUS_ERROR_RESPONSE;
         }
         /* 字节数应为 8通道 × 2字节/通道 = 16字节 */
-        if (response[2] != (RELAY_CHANNEL_COUNT * 2U))
+        if (byte_count != (RELAY_CHANNEL_COUNT * 2U))
+        {
+            return MODBUS_ERROR_RESPONSE;
+        }
+        if (length != (uint8_t)(byte_count + 5U))
         {
             return MODBUS_ERROR_RESPONSE;
         }
@@ -148,6 +273,14 @@ static ModbusError_t ValidateResponse(ModbusCommand_t cmd, uint8_t *response, ui
     case CMD_READ_HUMIDITY_TEMPERATURE:
         /* 温湿度读取：从站地址=0x01, 功能码=0x03 */
         if (response[0] != TEMP_HUMI_SLAVE_ADDR || response[1] != 0x03)
+        {
+            return MODBUS_ERROR_RESPONSE;
+        }
+        if (byte_count < 4U)
+        {
+            return MODBUS_ERROR_RESPONSE;
+        }
+        if (length != (uint8_t)(byte_count + 5U))
         {
             return MODBUS_ERROR_RESPONSE;
         }
@@ -159,7 +292,11 @@ static ModbusError_t ValidateResponse(ModbusCommand_t cmd, uint8_t *response, ui
             return MODBUS_ERROR_RESPONSE;
         }
         /* 返回数据字节数应为0x0C（6个寄存器 × 2字节 = 12字节） */
-        if (response[2] != 0x0C)
+        if (byte_count < 4U)
+        {
+            return MODBUS_ERROR_RESPONSE;
+        }
+        if (length != (uint8_t)(byte_count + 5U))
         {
             return MODBUS_ERROR_RESPONSE;
         }
@@ -171,7 +308,11 @@ static ModbusError_t ValidateResponse(ModbusCommand_t cmd, uint8_t *response, ui
             return MODBUS_ERROR_RESPONSE;
         }
         /* 返回数据字节数应为0x02（1个寄存器 × 2字节） */
-        if (response[2] != 0x02)
+        if (byte_count < 2U)
+        {
+            return MODBUS_ERROR_RESPONSE;
+        }
+        if (length != (uint8_t)(byte_count + 5U))
         {
             return MODBUS_ERROR_RESPONSE;
         }
@@ -202,6 +343,7 @@ static ModbusError_t SendModbusCommand_NoRTOS(ModbusCommand_t cmd, uint8_t retry
     /* 检查命令索引合法性 */
     if ((uint8_t)cmd >= MODBUS_COMMAND_COUNT)
     {
+        Modbus_UpdateLastDiag(cmd, MODBUS_ERROR_RESPONSE, 0U, NULL, 0U);
         return MODBUS_ERROR_RESPONSE;
     }
 
@@ -211,6 +353,7 @@ static ModbusError_t SendModbusCommand_NoRTOS(ModbusCommand_t cmd, uint8_t retry
     /* 重试循环 */
     for (retry = 0U; retry < retry_count; retry++)
     {
+        Modbus_UpdateLastDiag(cmd, MODBUS_ERROR_TIMEOUT, (uint8_t)(retry + 1U), NULL, 0U);
         Serial_ClearRxBuffer();     /* 清空接收缓冲区，丢弃残留数据 */
         Serial_SendPacket(packet);  /* 发送Modbus请求帧（自动追加CRC16） */
 
@@ -227,9 +370,11 @@ static ModbusError_t SendModbusCommand_NoRTOS(ModbusCommand_t cmd, uint8_t retry
                 if (error == MODBUS_SUCCESS)
                 {
                     result = MODBUS_SUCCESS;
+                    Modbus_UpdateLastDiag(cmd, MODBUS_SUCCESS, (uint8_t)(retry + 1U), response, response_length);
                     break;  /* 通信成功，退出等待循环 */
                 }
 
+                Modbus_UpdateLastDiag(cmd, error, (uint8_t)(retry + 1U), response, response_length);
                 result = error; /* 记录错误类型，继续等待或重试 */
             }
             Delay_ms(1U);   /* 阻塞延时1ms */
@@ -299,12 +444,14 @@ ModbusError_t SendModbusCommand(ModbusCommand_t cmd, uint8_t retry_count)
     /* 检查命令索引合法性 */
     if ((uint8_t)cmd >= MODBUS_COMMAND_COUNT)
     {
+        Modbus_UpdateLastDiag(cmd, MODBUS_ERROR_RESPONSE, 0U, NULL, 0U);
         return MODBUS_ERROR_RESPONSE;
     }
 
     /* 获取串口互斥锁，最长等待1000ms，防止多任务并发访问总线 */
     if (xSemaphoreTake(xSerialSemaphore, pdMS_TO_TICKS(1000)) != pdTRUE)
     {
+        Modbus_UpdateLastDiag(cmd, MODBUS_ERROR_SERIAL, 0U, NULL, 0U);
         return MODBUS_ERROR_SERIAL;  /* 互斥锁获取超时 */
     }
 
@@ -314,6 +461,7 @@ ModbusError_t SendModbusCommand(ModbusCommand_t cmd, uint8_t retry_count)
     /* 重试循环 */
     for (uint8_t retry = 0; retry < retry_count; retry++)
     {
+        Modbus_UpdateLastDiag(cmd, MODBUS_ERROR_TIMEOUT, (uint8_t)(retry + 1U), NULL, 0U);
         TickType_t timeout = pdMS_TO_TICKS(150);    /* 继电器命令默认超时150ms */
         TickType_t start_time;
 
@@ -342,6 +490,7 @@ ModbusError_t SendModbusCommand(ModbusCommand_t cmd, uint8_t retry_count)
                     result = MODBUS_SUCCESS;
 
                     /* ===== 根据命令类型解析响应数据 ===== */
+                    Modbus_UpdateLastDiag(cmd, MODBUS_SUCCESS, (uint8_t)(retry + 1U), response, response_length);
                     if (cmd <= CMD_CLOSE_CH8)
                     {
                         /* --- 继电器写入命令：从命令索引推算通道号和目标状态 --- */
@@ -417,6 +566,7 @@ ModbusError_t SendModbusCommand(ModbusCommand_t cmd, uint8_t retry_count)
                     break;  /* 通信成功，退出等待循环 */
                 }
 
+                Modbus_UpdateLastDiag(cmd, error, (uint8_t)(retry + 1U), response, response_length);
                 result = error; /* 记录错误类型 */
             }
 

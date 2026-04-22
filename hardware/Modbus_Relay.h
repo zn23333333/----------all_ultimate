@@ -36,6 +36,7 @@ typedef enum
 
 
 
+
 /* ======================== Modbus 命令索引枚举 ======================== */
 /**
  * @brief Modbus 命令索引枚举
@@ -67,6 +68,21 @@ typedef enum
     CMD_READ_PM25_PM10,             /**< 读取PM2.5/PM10颗粒物传感器数据（功能码0x03） */
     CMD_READ_GAS                    /**< 读取燃气传感器数据（功能码0x04） */
 } ModbusCommand_t;
+
+typedef struct
+{
+    ModbusCommand_t command;     /**< Last Modbus command */
+    ModbusError_t error;         /**< Last command result */
+    uint8_t request_addr;        /**< Request slave address */
+    uint8_t request_func;        /**< Request function code */
+    uint8_t response_addr;       /**< Response slave address */
+    uint8_t response_func;       /**< Response function code */
+    uint8_t response_len;        /**< Response frame length */
+    uint8_t response_byte_count; /**< Response byte-count field */
+    uint8_t response_preview[8]; /**< First bytes of response frame */
+    uint8_t response_preview_len;/**< Valid bytes in response_preview */
+    uint8_t retry_index;         /**< 1-based retry index */
+} ModbusDiagSnapshot_t;
 
 
 
@@ -104,6 +120,9 @@ void Modbus_Relay_Init(void);
  * @return ModbusError_t 通信结果错误码
  */
 ModbusError_t SendModbusCommand(ModbusCommand_t cmd, uint8_t retry_count);
+const char *Modbus_CommandName(ModbusCommand_t cmd);
+const char *Modbus_ErrorText(ModbusError_t error);
+void Modbus_GetLastDiag(ModbusDiagSnapshot_t *out);
 
 /**
  * @brief  读取全部继电器通道状态

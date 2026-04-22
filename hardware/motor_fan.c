@@ -3,7 +3,7 @@
  * @brief   PWM风扇控制模块实现
  *
  * 功能概述：
- *   1. TIM3_CH1（PA6）输出10kHz PWM信号控制风扇转速
+ *   1. TIM1_CH4（PE14）输出10kHz PWM信号控制风扇转速
  *   2. 5级档位查表（默认0/25/50/75/100%），支持运行时修改
  *   3. 自动管理电源继电器（第6路）：博比>0闭合，博比=0断开
  *   4. 使用FreeRTOS临界区保护共享变量（多任务安全）
@@ -57,7 +57,7 @@ static void Motor_UpdatePowerRelay(uint8_t duty_percent)
     }
 }
 
-/** @brief 初始化PWM输出GPIO（PA6复用为TIM3） */
+/** @brief 初始化PWM输出GPIO（PE14复用为TIM1_CH4） */
 static void Motor_PWM_GPIO_Init(void)
 {
     GPIO_InitTypeDef gpio_init;
@@ -75,10 +75,10 @@ static void Motor_PWM_GPIO_Init(void)
 }
 
 /**
- * @brief   初始化TIM3 PWM输出
+ * @brief   初始化TIM1 PWM输出
  *
- * 配置TIM3为向上计数模式，PWM1模式，
- * 频率: 84MHz / 84(PSC) / 100(ARR) = 10kHz。
+ * 配置TIM1为向上计数模式，PWM1模式，
+ * 频率: 168MHz / 168(PSC) / 100(ARR) = 10kHz。
  * 初始博比为0%（风扇停止）。
  */
 static void Motor_PWM_TIM_Init(void)
@@ -86,7 +86,7 @@ static void Motor_PWM_TIM_Init(void)
     TIM_TimeBaseInitTypeDef tim_base_init;
     TIM_OCInitTypeDef tim_oc_init;
 
-    RCC_APB1PeriphClockCmd(MOTOR_PWM_TIM_CLK, ENABLE);
+    RCC_APB2PeriphClockCmd(MOTOR_PWM_TIM_CLK, ENABLE);
 
     TIM_TimeBaseStructInit(&tim_base_init);
     tim_base_init.TIM_Prescaler = (uint16_t)(MOTOR_PWM_PRESCALER - 1U);
@@ -100,14 +100,15 @@ static void Motor_PWM_TIM_Init(void)
     tim_oc_init.TIM_OutputState = TIM_OutputState_Enable;
     tim_oc_init.TIM_OCPolarity = TIM_OCPolarity_High;
     tim_oc_init.TIM_Pulse = 0U;
-    TIM_OC1Init(MOTOR_PWM_TIM, &tim_oc_init);
-    TIM_OC1PreloadConfig(MOTOR_PWM_TIM, TIM_OCPreload_Enable);
+    TIM_OC4Init(MOTOR_PWM_TIM, &tim_oc_init);
+    TIM_OC4PreloadConfig(MOTOR_PWM_TIM, TIM_OCPreload_Enable);
 
     TIM_ARRPreloadConfig(MOTOR_PWM_TIM, ENABLE);
+    TIM_CtrlPWMOutputs(MOTOR_PWM_TIM, ENABLE);
     TIM_Cmd(MOTOR_PWM_TIM, ENABLE);
 }
 
-/** @brief 初始化风扇模块（GPIO + TIM3），吟动0档（停止） */
+/** @brief 初始化风扇模块（GPIO + TIM1），启动0档（停止） */
 void Motor_Init(void)
 {
     Motor_PWM_GPIO_Init();
@@ -118,7 +119,7 @@ void Motor_Init(void)
 /**
  * @brief   设置PWM博比（0~100%）
  *
- * 在临界区内更新博比值和TIM3比较寄存器，
+ * 在临界区内更新博比值和TIM1_CH4比较寄存器，
  * 然后更新电源继电器状态。
  *
  * @param   duty_percent  空占比百分比（0~100）
@@ -130,7 +131,7 @@ void Motor_SetDutyPercent(uint8_t duty_percent)
     taskENTER_CRITICAL();
     s_current_duty_percent = Motor_ClampDuty(duty_percent);
     pulse = ((uint32_t)MOTOR_PWM_PERIOD * (uint32_t)s_current_duty_percent) / 100U;
-    TIM_SetCompare1(MOTOR_PWM_TIM, (uint16_t)pulse);
+    TIM_SetCompare4(MOTOR_PWM_TIM, (uint16_t)pulse);
     taskEXIT_CRITICAL();
     Motor_UpdatePowerRelay(s_current_duty_percent);
 }

@@ -1,48 +1,17 @@
-/***
-	*************************************************************************************************
-	*	@version V1.0
-	*	@author  ¹С��Ƽ�	
-	*	@brief   LED�ӿ����
-   *************************************************************************************************
-   *  @description
-	*
-	*	ʵ��ƽ̨��¹С��STM32F407ZGT6���İ� ���ͺţ�LXB407ZG-P1��
-	* �ͷ�΢�ţ�19949278543
-	*
->>>>> �ļ�˵����
-	*
-	*	��ʼ��LED��IO�ڣ�����Ϊ����������ٶȵȼ�2M��
-	*
-	************************************************************************************************
-***/
-
-
-#include "led.h"  
-
-/*************************************************************************************************
-*	�� �� ��:	LED_Init
-*
-*	��������:	IO�ڳ�ʼ��
-*	 
-*************************************************************************************************/
+#include "led.h"
 
 void LED_Init(void)
-{		
-	GPIO_InitTypeDef GPIO_InitStructure; //����ṹ��
-	RCC_AHB1PeriphClockCmd ( LED1_CLK, ENABLE); 	//��ʼ��GPIOGʱ��	
-	
-	GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;   //���ģʽ
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;  //�������
-	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;	//����
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz; //�ٶ�ѡ��
-	
-	//��ʼ�� LED1 ����
-	GPIO_InitStructure.GPIO_Pin = LED1_PIN;	 
-	GPIO_Init(LED1_PORT, &GPIO_InitStructure);	
-	
-	GPIO_ResetBits(LED1_PORT,LED1_PIN);  //PG7����͵�ƽ
+{
+    GPIO_InitTypeDef gpio_init;
+
+    RCC_AHB1PeriphClockCmd(LED1_CLK, ENABLE);
+
+    gpio_init.GPIO_Mode = GPIO_Mode_OUT;
+    gpio_init.GPIO_OType = GPIO_OType_PP;
+    gpio_init.GPIO_PuPd = GPIO_PuPd_UP;
+    gpio_init.GPIO_Speed = GPIO_Speed_2MHz;
+    gpio_init.GPIO_Pin = LED1_PIN;
+    GPIO_Init(LED1_PORT, &gpio_init);
+
+    GPIO_ResetBits(LED1_PORT, LED1_PIN);
 }
-
-
-
-

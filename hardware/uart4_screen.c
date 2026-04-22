@@ -1,27 +1,27 @@
 ﻿/**
  * @file    uart4_screen.c
- * @brief   UART4串口屏驱动实现
+ * @brief   UART5串口屏驱动实现
  *
  * 使用环形缓冲区（256字节）中断接收屏幕上传数据。
  * 支持可选的USART3 Hex镜像调试输出（UART_SCREEN_MIRROR_TO_USART3），
- * 开启后所有UART4收发数据会以Hex格式输出到调试串口。
+ * 开启后所有UART5收发数据会以Hex格式输出到调试串口。
  */
 #include "uart4_screen.h"
 #include "usart3_debug.h"
 
-/** 镜像开关：1=将UART4收发以Hex输出到USART3调试口，0=关闭 */
+/** 镜像开关：1=将UART5收发以Hex输出到调试口，0=关闭 */
 #define UART_SCREEN_MIRROR_TO_USART3   0U
 
 /* ======================== 环形缓冲区变量 ======================== */
-static volatile uint8_t s_uart4_rx_buf[UART_SCREEN_RX_BUFFER_SIZE]; /**< 接收环形缓冲区 */
-static volatile uint16_t s_uart4_rx_head = 0U;  /**< 写入位置（ISR更新） */
-static volatile uint16_t s_uart4_rx_tail = 0U;  /**< 读取位置（任务侧更新） */
+static volatile uint8_t s_uart_screen_rx_buf[UART_SCREEN_RX_BUFFER_SIZE]; /**< 接收环形缓冲区 */
+static volatile uint16_t s_uart_screen_rx_head = 0U;  /**< 写入位置（ISR更新） */
+static volatile uint16_t s_uart_screen_rx_tail = 0U;  /**< 读取位置（任务侧更新） */
 
-static volatile uint32_t s_uart4_rx_ore_count = 0U;
-static volatile uint32_t s_uart4_rx_fe_count = 0U;
-static volatile uint32_t s_uart4_rx_ne_count = 0U;
+static volatile uint32_t s_uart_screen_rx_ore_count = 0U;
+static volatile uint32_t s_uart_screen_rx_fe_count = 0U;
+static volatile uint32_t s_uart_screen_rx_ne_count = 0U;
 
-static uint8_t UART4_HandleRxErrors(void)
+static uint8_t UART_Screen_HandleRxErrors(void)
 {
     uint16_t status = UART_SCREEN_PORT->SR;
 
@@ -32,15 +32,15 @@ static uint8_t UART4_HandleRxErrors(void)
 
     if ((status & USART_SR_ORE) != 0U)
     {
-        s_uart4_rx_ore_count++;
+        s_uart_screen_rx_ore_count++;
     }
     if ((status & USART_SR_FE) != 0U)
     {
-        s_uart4_rx_fe_count++;
+        s_uart_screen_rx_fe_count++;
     }
     if ((status & USART_SR_NE) != 0U)
     {
-        s_uart4_rx_ne_count++;
+        s_uart_screen_rx_ne_count++;
     }
 
     (void)UART_SCREEN_PORT->DR;
@@ -57,7 +57,7 @@ static void UART_Screen_MirrorStart(uint8_t dir)
         return;
     }
 
-    Usart_SendString("\r\n[UART4 ");
+    Usart_SendString("\r\n[UART5 ");
     if (dir == 1U)
     {
         Usart_SendString("TX] ");
@@ -81,7 +81,7 @@ static void UART_Screen_MirrorHexByte(uint8_t dir, uint8_t data)
 #endif
 
 /** @brief 环形缓冲区索引进位（到末尾回绕0） */
-static uint16_t UART4_NextIndex(uint16_t index)
+static uint16_t UART_Screen_NextIndex(uint16_t index)
 {
     index++;
     if (index >= UART_SCREEN_RX_BUFFER_SIZE)
@@ -92,7 +92,7 @@ static uint16_t UART4_NextIndex(uint16_t index)
 }
 
 /**
- * @brief   初始化UART4（GPIO复用、512000bps、接收中断）
+ * @brief   初始化UART5（GPIO复用、512000bps、接收中断）
  *
  * 中断优先级设为6（在 FreeRTOS configMAX_SYSCALL 范围内）。
  */
@@ -115,8 +115,8 @@ void UART_Screen_Init(void)
     gpio_init.GPIO_Pin = UART_SCREEN_RX_PIN;
     GPIO_Init(UART_SCREEN_RX_PORT, &gpio_init);
 
-    GPIO_PinAFConfig(UART_SCREEN_TX_PORT, UART_SCREEN_TX_PINSOURCE, GPIO_AF_UART4);
-    GPIO_PinAFConfig(UART_SCREEN_RX_PORT, UART_SCREEN_RX_PINSOURCE, GPIO_AF_UART4);
+    GPIO_PinAFConfig(UART_SCREEN_TX_PORT, UART_SCREEN_TX_PINSOURCE, GPIO_AF_UART5);
+    GPIO_PinAFConfig(UART_SCREEN_RX_PORT, UART_SCREEN_RX_PINSOURCE, GPIO_AF_UART5);
 
     uart_init.USART_BaudRate = UART_SCREEN_DEFAULT_BAUDRATE;
     uart_init.USART_WordLength = USART_WordLength_8b;
@@ -193,14 +193,14 @@ uint8_t UART_Screen_ReadByte(uint8_t *out)
         return 0U;
     }
 
-    tail = s_uart4_rx_tail;
-    if (tail == s_uart4_rx_head)
+    tail = s_uart_screen_rx_tail;
+    if (tail == s_uart_screen_rx_head)
     {
         return 0U;
     }
 
-    *out = s_uart4_rx_buf[tail];
-    s_uart4_rx_tail = UART4_NextIndex(tail);
+    *out = s_uart_screen_rx_buf[tail];
+    s_uart_screen_rx_tail = UART_Screen_NextIndex(tail);
 #if UART_SCREEN_MIRROR_TO_USART3
     UART_Screen_MirrorHexByte(2U, *out);
 #endif
@@ -211,22 +211,22 @@ uint8_t UART_Screen_ReadByte(uint8_t *out)
 void UART_Screen_ClearRxBuffer(void)
 {
     __disable_irq();
-    s_uart4_rx_head = 0U;
-    s_uart4_rx_tail = 0U;
+    s_uart_screen_rx_head = 0U;
+    s_uart_screen_rx_tail = 0U;
     __enable_irq();
 }
 
 /**
- * @brief   UART4接收中断服务函数
+ * @brief   UART5接收中断服务函数
  *
  * 将接收字节写入环形缓冲区，缓冲区满时丢弃最旧数据。
  */
-void UART4_IRQHandler(void)
+void UART5_IRQHandler(void)
 {
     uint8_t data;
     uint16_t next;
 
-    if (UART4_HandleRxErrors() != 0U)
+    if (UART_Screen_HandleRxErrors() != 0U)
     {
         return;
     }
@@ -237,15 +237,15 @@ void UART4_IRQHandler(void)
     }
 
     data = (uint8_t)USART_ReceiveData(UART_SCREEN_PORT);
-    next = UART4_NextIndex(s_uart4_rx_head);
+    next = UART_Screen_NextIndex(s_uart_screen_rx_head);
 
-    if (next == s_uart4_rx_tail)
+    if (next == s_uart_screen_rx_tail)
     {
-        s_uart4_rx_tail = UART4_NextIndex(s_uart4_rx_tail);
+        s_uart_screen_rx_tail = UART_Screen_NextIndex(s_uart_screen_rx_tail);
     }
 
-    s_uart4_rx_buf[s_uart4_rx_head] = data;
-    s_uart4_rx_head = next;
+    s_uart_screen_rx_buf[s_uart_screen_rx_head] = data;
+    s_uart_screen_rx_head = next;
 
     USART_ClearITPendingBit(UART_SCREEN_PORT, USART_IT_RXNE);
 }

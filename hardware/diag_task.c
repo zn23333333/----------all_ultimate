@@ -18,7 +18,9 @@
 #include <stdio.h>
 
 #include "esp01s.h"
+#include "Modbus_Relay.h"
 #include "mqtt_app.h"
+#include "uart1_modbus.h"
 
 /* 输出周期：适当克制，避免 printf 影响系统实时性 */
 #define DIAG_STATUS_INTERVAL_MS   5000U
@@ -54,10 +56,10 @@ static void Diag_PrintStacks(void)
         printf("[DIAG][STACK] Display=%lu\r\n", (unsigned long)uxTaskGetStackHighWaterMark(task));
     }
 
-    task = xTaskGetHandle("LED_PC13");
+    task = xTaskGetHandle("LED_PG14");
     if (task != NULL)
     {
-        printf("[DIAG][STACK] LED_PC13=%lu\r\n", (unsigned long)uxTaskGetStackHighWaterMark(task));
+        printf("[DIAG][STACK] LED_PG14=%lu\r\n", (unsigned long)uxTaskGetStackHighWaterMark(task));
     }
 
     task = xTaskGetIdleTaskHandle();
@@ -67,6 +69,44 @@ static void Diag_PrintStacks(void)
     }
 
     printf("[DIAG][STACK] ---------------------------\r\n");
+}
+
+static void Diag_PrintModbus(void)
+{
+    ModbusDiagSnapshot_t diag;
+    SerialDiagSnapshot_t serial_diag;
+    uint8_t i;
+
+    Modbus_GetLastDiag(&diag);
+    Serial_GetDiagSnapshot(&serial_diag);
+    printf("[DIAG][MODBUS] cmd=%s err=%s retry=%u req=%02X/%02X resp=%02X/%02X len=%u bytes=%u\r\n",
+           Modbus_CommandName(diag.command),
+           Modbus_ErrorText(diag.error),
+           (unsigned int)diag.retry_index,
+           (unsigned int)diag.request_addr,
+           (unsigned int)diag.request_func,
+           (unsigned int)diag.response_addr,
+           (unsigned int)diag.response_func,
+           (unsigned int)diag.response_len,
+           (unsigned int)diag.response_byte_count);
+    if (diag.response_preview_len > 0U)
+    {
+        printf("[DIAG][MODBUS] raw=");
+        for (i = 0U; i < diag.response_preview_len; i++)
+        {
+            printf("%02X", (unsigned int)diag.response_preview[i]);
+            if ((i + 1U) < diag.response_preview_len)
+            {
+                printf(" ");
+            }
+        }
+        printf("\r\n");
+    }
+    printf("[DIAG][UART4] frames=%lu ore=%lu fe=%lu ne=%lu\r\n",
+           (unsigned long)serial_diag.rx_frame_count,
+           (unsigned long)serial_diag.rx_ore_count,
+           (unsigned long)serial_diag.rx_fe_count,
+           (unsigned long)serial_diag.rx_ne_count);
 }
 
 void Diag_Task(void *arg)
@@ -97,6 +137,7 @@ void Diag_Task(void *arg)
                (unsigned int)web,
                (unsigned int)err,
                (err_text != NULL) ? err_text : "-");
+        Diag_PrintModbus();
 
         now = xTaskGetTickCount();
         if ((now - last_stack_tick) >= pdMS_TO_TICKS(DIAG_STACK_INTERVAL_MS))
@@ -108,4 +149,3 @@ void Diag_Task(void *arg)
         vTaskDelay(pdMS_TO_TICKS(DIAG_STATUS_INTERVAL_MS));
     }
 }
-

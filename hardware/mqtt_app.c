@@ -285,7 +285,7 @@ static uint32_t App_MqttNextSeq(void)
  * @brief 获取缓存的继电器链路状态（线程安全）
  * @return 1=在线, 0=断开
  */
-static uint8_t App_GetRelayLinkCached(void)
+uint8_t MqttApp_GetRelayLinkCached(void)
 {
     uint8_t cached;
 
@@ -1078,7 +1078,7 @@ static uint8_t App_MqttPublishStatus(void)
 
     AllSensorData_GetConnectionStatus(&conn);   /* 获取传感器连接状态 */
     AllSensorData_GetSnapshot(&sensor);           /* 获取传感器数据快照 */
-    relay_connected = App_GetRelayLinkCached();   /* 获取继电器链路缓存 */
+    relay_connected = MqttApp_GetRelayLinkCached();   /* 获取继电器链路缓存 */
     App_GetManualSnapshot(&m);                    /* 获取手动状态快照 */
 
     seq = App_MqttNextSeq();

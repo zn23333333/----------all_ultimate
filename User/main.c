@@ -10,14 +10,14 @@
  *     - 两个esp32无线传感器（人体检测、光照、门磁）经 MQTT/UDP 上报
  *     - 8 路继电器(实用6路)控制（加热器、制冷器、加湿器、LED灯光、声光报警器、风扇电源）
  *     - PWM 风扇 5 挡调速
- *     - 串口屏（UART4）实时显示传感器数据与设备状态，并且提供本地按键控制界面
+ *     - 串口屏（UART5）实时显示传感器数据与设备状态，并且提供本地按键控制界面
  *     - OLED 屏（I2C, PB8/PB9）本地循环显示
  *     - 运行参数持久化到片内 Flash
  *
  *   FreeRTOS 任务分配：
  *     DisplayCycleTask  : OLED 轮播（温湿度 → PM → 气体 → 继电器状态）
  *     ControlTask       : 传感器轮询 + 自动控制逻辑 + 参数持久化
- *     Task_PC13         : 心跳 LED 闪烁指示系统运行
+ *     Task_PG14         : 心跳 LED 闪烁指示系统运行
  *     Screen_Task       : 串口屏数据刷新与用户交互处理
  *     MqttApp_Task      : WiFi/MQTT 连接管理与远程数据收发
  */
@@ -31,23 +31,23 @@
 
 #include "delay.h"               /* DWT 精确延时（微秒/毫秒） */
 #include "OLED.h"                /* 0.96" OLED 显示驱动（I2C, PB8-SCL, PB9-SDA） */
-#include "uart1_modbus.h"        /* USART1 Modbus RTU 底层驱动 (PA9/PA10, 9600bps) */
+#include "uart1_modbus.h"        /* UART4 Modbus RTU 底层驱动 (PC10/PC11, 9600bps) */
 #include "key.h"                 /* 按键驱动 (PA15) */
 #include "Modbus_Relay.h"        /* Modbus RTU 继电器/传感器读写封装 */
 #include "all_sensor_data.h"     /* 传感器数据集中管理（有线 + 无线） */
 #include "logic.h"               /* 自动控制逻辑（温度/湿度/光照/报警/风扇） */
-#include "motor_fan.h"           /* PWM 风扇控制驱动 (TIM3_CH1, PA6) */
-#include "usart3_debug.h"        /* USART3 调试串口 (PD8/PD9, 115200bps) */
+#include "motor_fan.h"           /* PWM 风扇控制驱动 (TIM1_CH4, PE14) */
+#include "usart3_debug.h"        /* USART1 调试串口 (PA9/PA10, 115200bps) */
 #include "esp01s.h"              /* ESP01S WiFi/MQTT 驱动（AT 指令层） */
 #include "screen.h"              /* 串口屏逻辑层 */
-#include "uart4_screen.h"        /* UART4 串口屏底层驱动 (PC10/PC11, 512000bps) */
+#include "uart4_screen.h"        /* UART5 串口屏底层驱动 (PC12/PD2, 512000bps) */
 #include "runtime_config.h"      /* 运行参数 Flash 持久化模块 */
 #include "mqtt_app.h"            /* MQTT 应用层任务（远程监控与命令处理） */
 #include "diag_task.h"            /* UART3 诊断输出任务（仅日志，不改业务） */
 
 /* ======================== 编译开关宏 ======================== */
 #define ESP01S_TEST_ENABLE           1U   /**< 1=启用 MQTT 任务, 0=禁用（调试用） */
-#define UART4_TX_TEST_ENABLE         0U   /**< 1=启用 UART4 发送测试任务（仅调试）, 0=正常屏幕任务 */
+#define UART4_TX_TEST_ENABLE         0U   /**< 1=启用串口屏发送测试任务（仅调试）, 0=正常屏幕任务 */
 #define CONTROL_TASK_STACK_WORDS     896U /**< Control 任务栈大小（单位：字，即 3584 字节） */
 #define SCREEN_TASK_STACK_WORDS      768U /**< Screen 任务栈大小（单位：字，即 3072 字节） */
 #define MQTT_TASK_STACK_WORDS        1152U /**< MQTT 任务栈大小（单位：字，即 4608 字节） */
@@ -202,37 +202,37 @@ void ControlTask(void *arg)
 
 /**
  * @brief  LED GPIO 初始化
- * @note   PC13 配置为推挽输出，默认低电平（LED 亮）。
- *         PC13 用作系统心跳指示灯
+ * @note   PG14 配置为推挽输出，默认低电平（LED 亮）。
+ *         PG14 用作系统心跳指示灯
  */
 static void LED_GPIO_Init(void)
 {
     GPIO_InitTypeDef gpio;
 
-    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);  /* 使能 GPIOC 时钟 */
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG, ENABLE);  /* 使能 GPIOG 时钟 */
 
-    gpio.GPIO_Pin = GPIO_Pin_13;
+    gpio.GPIO_Pin = GPIO_Pin_14;
     gpio.GPIO_Mode = GPIO_Mode_OUT;       /* 通用输出 */
     gpio.GPIO_Speed = GPIO_Speed_50MHz;
     gpio.GPIO_OType = GPIO_OType_PP;      /* 推挽输出 */
     gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;    /* 无上下拉 */
-    GPIO_Init(GPIOC, &gpio);
+    GPIO_Init(GPIOG, &gpio);
 
-    GPIO_ResetBits(GPIOC, GPIO_Pin_13);  /* 初始输出低电平 */
+    GPIO_ResetBits(GPIOG, GPIO_Pin_14);  /* 初始输出低电平 */
 }
 
 /**
  * @brief  心跳 LED 任务
- * @note   每 500ms 翻转 PC13 电平，用于指示系统正常运行。
+ * @note   每 500ms 翻转 PG14 电平，用于指示系统正常运行。
  *         优先级最低（1），不影响业务任务。
  */
-static void Task_PC13(void *pvParameters)
+static void Task_PG14(void *pvParameters)
 {
     (void)pvParameters;
 
     for (;;)
     {
-        GPIO_ToggleBits(GPIOC, GPIO_Pin_13);   /* 翻转 LED 电平 */
+        GPIO_ToggleBits(GPIOG, GPIO_Pin_14);   /* 翻转 LED 电平 */
         vTaskDelay(pdMS_TO_TICKS(500));         /* 500ms 闪烁周期 */
     }
 }
@@ -255,15 +255,15 @@ int main(void)
     Delay_DWT_Init();                    /* 初始化 DWT 周期计数器（微秒级延时） */
 
     /* -------- 调试串口（最先初始化以便输出后续日志） -------- */
-    Usart_Config();                      /* USART3: PD8(TX)/PD9(RX)，115200bps */
-    printf("Boot: USART3 debug ready (PD8/PD9)\r\n");
+    Usart_Config();                      /* USART1: PA9(TX)/PA10(RX)，115200bps */
+    printf("Boot: USART1 debug ready (PA9/PA10)\r\n");
 
     /* -------- 各硬件模块初始化 -------- */
     OLED_Init();                         /* OLED 显示屏初始化（I2C, PB8/PB9） */
-    Modbus_Relay_Init();                 /* USART1 Modbus 主站 + 互斥信号量 */
+    Modbus_Relay_Init();                 /* UART4 Modbus 主站 + 互斥信号量 */
     AllSensorData_Init();                /* 传感器数据管理模块初始化 */
     Logic_Init();                        /* 自动控制逻辑模块初始化 */
-    Motor_Init();                        /* PWM 风扇初始化（TIM3_CH1, PA6） */
+    Motor_Init();                        /* PWM 风扇初始化（TIM1_CH4, PE14） */
 
     /* -------- 加载运行参数 -------- */
     App_BuildProjectFactoryThresholds(&factory_thresholds);                   /* 默认阈值，可在上面修改 */
@@ -271,12 +271,12 @@ int main(void)
     (void)RuntimeConfig_LoadAndApply();  /* 从 Flash 加载可能屏幕或者网页端修改过的值，若无效则回退上面函数赋的值 */
 
     /* -------- 串口屏初始化 -------- */
-    // UART_Screen_Init();                  /* 仅初始化底层 UART4 硬件（测试模式） */
+    // UART_Screen_Init();                  /* 仅初始化底层 UART5 硬件（测试模式） */
     Screen_Init();                       /* 初始化串口屏完整协议栈 */
 
 
     OLED_Clear();                        /* 清空 OLED 显存 */
-    LED_GPIO_Init();                     /* PC12/PC13 LED 初始化 */
+    LED_GPIO_Init();                     /* PG14 心跳 LED 初始化 */
 
     /* ============ 创建 FreeRTOS 任务 ============ */
 
@@ -301,7 +301,7 @@ int main(void)
     }
 
     /* 心跳 LED 闪烁任务：栈 128 字 = 512B，优先级 1（最低） */
-    ret = xTaskCreate(Task_PC13, "LED_PC13", 128, NULL, 1, NULL);
+    ret = xTaskCreate(Task_PG14, "LED_PG14", 128, NULL, 1, NULL);
     if (ret != pdPASS)
     {
         printf("ERR: create LED task failed\r\n");
@@ -311,7 +311,7 @@ int main(void)
     }
 
 #if UART4_TX_TEST_ENABLE
-    /* UART4 发送测试任务（仅调试用） */
+    /* 串口屏发送测试任务（仅调试用） */
     ret = xTaskCreate(UART4_TxTestTask, "U4_TX", 256, NULL, 1, NULL);
     if (ret != pdPASS)
     {

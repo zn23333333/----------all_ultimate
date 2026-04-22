@@ -27,7 +27,7 @@
  *   - Web 前端在线检测（90 秒超时机制）
  *   - 错误码管理与描述文本
  *
- * 硬件连接：USART2 (PA2-TX / PA3-RX)，115200bps，8N1
+ * 硬件连接：USART2 (PD5-TX / PD6-RX)，115200bps，8N1
  */
 
 #include "esp01s.h"

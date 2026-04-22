@@ -2,7 +2,7 @@
  * @file    motor_fan.h
  * @brief   PWM风扇控制模块（头文件）
  *
- * 使用TIM3_CH1（PA6）输出10kHz PWM信号控制风扇转速。
+ * 使用TIM1_CH4（PE14）输出10kHz PWM信号控制风扇转速。
  * 支持两种调速方式：
  *   1. 百分比直接设置（Motor_SetDutyPercent）
  *   2. 5级档位设置（Motor_SetLevel），每级对应可配置的博比值
@@ -16,24 +16,24 @@
 #include <stdint.h>
 
 /* ======================== PWM硬件配置宏 ======================== */
-#define MOTOR_PWM_TIM                    TIM3                /**< 定时器实例 */
-#define MOTOR_PWM_TIM_CLK                RCC_APB1Periph_TIM3  /**< TIM3时钟（APB1, 84MHz） */
+#define MOTOR_PWM_TIM                    TIM1                 /**< 定时器实例 */
+#define MOTOR_PWM_TIM_CLK                RCC_APB2Periph_TIM1  /**< TIM1时钟（APB2 定时器时钟, 168MHz） */
 
-#define MOTOR_PWM_GPIO_PORT              GPIOA               /**< PWM输出GPIO端口 */
-#define MOTOR_PWM_GPIO_CLK               RCC_AHB1Periph_GPIOA /**< GPIO时钟 */
-#define MOTOR_PWM_PIN                    GPIO_Pin_6           /**< PWM引脚: PA6 */
-#define MOTOR_PWM_PINSOURCE              GPIO_PinSource6      /**< 引脚复用源 */
-#define MOTOR_PWM_GPIO_AF                GPIO_AF_TIM3         /**< 复用功能: TIM3 */
+#define MOTOR_PWM_GPIO_PORT              GPIOE                /**< PWM输出GPIO端口 */
+#define MOTOR_PWM_GPIO_CLK               RCC_AHB1Periph_GPIOE /**< GPIO时钟 */
+#define MOTOR_PWM_PIN                    GPIO_Pin_14          /**< PWM引脚: PE14 */
+#define MOTOR_PWM_PINSOURCE              GPIO_PinSource14     /**< 引脚复用源 */
+#define MOTOR_PWM_GPIO_AF                GPIO_AF_TIM1         /**< 复用功能: TIM1 */
 
-/* 84MHz / 84 = 1MHz定时器时钟，1MHz / 100 = 10kHz PWM频率 */
-#define MOTOR_PWM_PRESCALER              84U                  /**< 预分频系数 */
+/* 168MHz / 168 = 1MHz定时器时钟，1MHz / 100 = 10kHz PWM频率 */
+#define MOTOR_PWM_PRESCALER              168U                 /**< 预分频系数 */
 #define MOTOR_PWM_PERIOD                 100U                 /**< PWM周期（计数值） */
 
 #define MOTOR_LEVEL_COUNT                5U                   /**< 风扇档位总数（0~4） */
 /* WriteRelay()的索引从0开始，第6路继电器对应索引5 */
 #define MOTOR_POWER_RELAY_INDEX          5U                   /**< 风扇电源继电器索引 */
 
-/** @brief 初始化风扇PWM（GPIO+TIM3）并设为停止状态 */
+/** @brief 初始化风扇PWM（GPIO+TIM1_CH4）并设为停止状态 */
 void Motor_Init(void);
 
 /** @brief 直接设置PWM博比（0~100%），并自动管理电源继电器 */

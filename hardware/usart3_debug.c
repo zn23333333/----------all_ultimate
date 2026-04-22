@@ -1,9 +1,9 @@
 ﻿/**
  * @file    usart3_debug.c
- * @brief   USART3调试串口驱动实现
+ * @brief   USART1调试串口驱动实现
  *
  * 功能：
- *   1. USART3 初始化（PD8 TX / PD9 RX，115200bps）
+ *   1. USART1 初始化（PA9 TX / PA10 RX，115200bps）
  *   2. 环形缓冲区中断接收（256字节）
  *   3. 重定向 fputc 实现 printf 输出到串口
  *   4. 禁用半主机模式（_sys_exit / _ttywrch / ferror 桩函数）
@@ -62,7 +62,7 @@ static uint16_t Usart_RxNext(uint16_t idx)
     return idx;
 }
 
-/** @brief 配置USART3的GPIO引脚（PD8 TX / PD9 RX，复用功能） */
+/** @brief 配置USART1的GPIO引脚（PA9 TX / PA10 RX，复用功能） */
 static void Usart_GPIO_Config(void)
 {
     GPIO_InitTypeDef gpio_init;
@@ -80,12 +80,12 @@ static void Usart_GPIO_Config(void)
     gpio_init.GPIO_Pin = USART_DBG_RX_PIN;
     GPIO_Init(USART_DBG_RX_PORT, &gpio_init);
 
-    GPIO_PinAFConfig(USART_DBG_TX_PORT, USART_DBG_TX_PinSource, GPIO_AF_USART3);
-    GPIO_PinAFConfig(USART_DBG_RX_PORT, USART_DBG_RX_PinSource, GPIO_AF_USART3);
+    GPIO_PinAFConfig(USART_DBG_TX_PORT, USART_DBG_TX_PinSource, GPIO_AF_USART1);
+    GPIO_PinAFConfig(USART_DBG_RX_PORT, USART_DBG_RX_PinSource, GPIO_AF_USART1);
 }
 
 /**
- * @brief   初始化USART3调试串口
+ * @brief   初始化USART1调试串口
  *
  * 配置GPIO复用、串口参数（115200bps, 8N1）、接收中断。
  * 中断优先级设为7（最低，调试口不影响关键业务）。
@@ -94,7 +94,7 @@ void Usart_Config(void)
 {
     USART_InitTypeDef usart_init;
 
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
+    RCC_APB2PeriphClockCmd(USART_DBG_CLK, ENABLE);
 
     Usart_GPIO_Config();
 
@@ -202,11 +202,11 @@ uint8_t Usart_ReadByte(uint8_t *out)
 }
 
 /**
- * @brief   USART3接收中断服务函数
+ * @brief   USART1接收中断服务函数
  *
  * 将接收字节写入环形缓冲区，缓冲区满时丢弃最旧数据。
  */
-void USART3_IRQHandler(void)
+void USART1_IRQHandler(void)
 {
     if (Usart_HandleRxErrors() != 0U)
     {
@@ -231,7 +231,7 @@ void USART3_IRQHandler(void)
 }
 
 /**
- * @brief   重定向 fputc 实现 printf 输出到USART3
+ * @brief   重定向 fputc 实现 printf 输出到USART1
  *
  * 这是 C 标准库的底层输出函数，每个 printf 字符都会调用此函数。
  */

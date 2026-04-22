@@ -43,6 +43,16 @@ void MqttApp_Task(void *arg);
 void MqttApp_PollRelayLink(void);
 
 /**
+ * @brief 获取 MQTT 模块内部维护的继电器 Modbus 链路缓存状态
+ *
+ * 该状态由 MqttApp_PollRelayLink() 周期维护，采用“连续失败多次才判离线”的
+ * 去抖策略，适合供屏幕等显示模块直接复用，避免重复占用 Modbus 总线。
+ *
+ * @return 1=继电器链路在线, 0=继电器链路离线
+ */
+uint8_t MqttApp_GetRelayLinkCached(void);
+
+/**
  * @brief 获取 MQTT Broker 当前是否处于已连接可用状态
  *
  * 该状态由 MQTT 连接建立、PING 心跳成功/失败以及重连过程共同维护，

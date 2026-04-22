@@ -2,7 +2,7 @@
  * @file    uart2_esp01s.h
  * @brief   USART2串口驱动（ESP01S WiFi模块通信）
  *
- * 基于STM32F407的USART2（PA2 TX / PA3 RX）实现与 ESP01S WiFi模块
+ * 基于STM32F407的USART2（PD5 TX / PD6 RX）实现与 ESP01S WiFi模块
  * 的串口通信，默认波特率115200bps。
  *
  * 特点：
@@ -26,15 +26,15 @@ extern "C"
 #define UART2_PORT_CLK             RCC_APB1Periph_USART2 /**< USART2时钟（APB1总线） */
 #define UART2_IRQn_NAME            USART2_IRQn          /**< USART2中断号 */
 
-#define UART2_TX_PIN               GPIO_Pin_2           /**< TX引脚: PA2 */
-#define UART2_TX_PORT              GPIOA                /**< TX端口 */
-#define UART2_TX_CLK               RCC_AHB1Periph_GPIOA /**< TX GPIO时钟 */
-#define UART2_TX_PINSOURCE         GPIO_PinSource2      /**< TX引脚复用源 */
+#define UART2_TX_PIN               GPIO_Pin_5           /**< TX引脚: PD5 */
+#define UART2_TX_PORT              GPIOD                /**< TX端口 */
+#define UART2_TX_CLK               RCC_AHB1Periph_GPIOD /**< TX GPIO时钟 */
+#define UART2_TX_PINSOURCE         GPIO_PinSource5      /**< TX引脚复用源 */
 
-#define UART2_RX_PIN               GPIO_Pin_3           /**< RX引脚: PA3 */
-#define UART2_RX_PORT              GPIOA                /**< RX端口 */
-#define UART2_RX_CLK               RCC_AHB1Periph_GPIOA /**< RX GPIO时钟 */
-#define UART2_RX_PINSOURCE         GPIO_PinSource3      /**< RX引脚复用源 */
+#define UART2_RX_PIN               GPIO_Pin_6           /**< RX引脚: PD6 */
+#define UART2_RX_PORT              GPIOD                /**< RX端口 */
+#define UART2_RX_CLK               RCC_AHB1Periph_GPIOD /**< RX GPIO时钟 */
+#define UART2_RX_PINSOURCE         GPIO_PinSource6      /**< RX引脚复用源 */
 
 #define UART2_DEFAULT_BAUDRATE     115200U              /**< 默认波特率 */
 #define UART2_RX_BUFFER_SIZE       2048U                /**< 接收环形缓冲区大小（字节） */

@@ -3,7 +3,7 @@
  * @brief   ESP01S WiFi/MQTT 驱动模块头文件
  *
  * 本模块为 STM32F407 环境保障系统提供 ESP01S WiFi 模组的驱动接口。
- * 通过 USART2（PA2/PA3, 115200bps）使用 AT 指令与 ESP01S 通信，实现：
+ * 通过 USART2（PD5/PD6, 115200bps）使用 AT 指令与 ESP01S 通信，实现：
  *   - WiFi STA 模式连接与管理
  *   - 多路 UDP/TCP 网络通信（CIPMUX=1 模式）
  *   - 软件 MQTT 客户端（在 TCP 链路上手动编解码 MQTT 3.1.1 报文）
@@ -80,7 +80,7 @@ typedef struct
 /* ======================== 底层 UART / AT 指令接口 ======================== */
 
 /**
- * @brief 初始化 ESP01S 使用的 UART 外设（USART2）并清空接收缓存
+ * @brief 初始化 ESP01S 使用的 UART 外设（USART2, PD5/PD6）并清空接收缓存
  */
 void ESP01S_UART_Init(void);
 

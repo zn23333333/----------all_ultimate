@@ -1,8 +1,8 @@
 /**
  * @file    uart1_modbus.h
- * @brief   USART1 Modbus RTU通信驱动（头文件）
+ * @brief   UART4 Modbus RTU通信驱动（头文件）
  *
- * 基于STM32F407的USART1（PA9/PA10）实现Modbus RTU主站通信，
+ * 基于STM32F407的UART4（PC10/PC11）实现Modbus RTU主站通信，
  * 波特率9600，用于与Modbus从设备（传感器、继电器板）通信。
  *
  * 特点：
@@ -16,24 +16,32 @@
 #include "stm32f4xx.h"
 #include <stdint.h>
 
-/* ======================== USART1硬件配置宏 ======================== */
-#define SERIAL_USART            USART1                /**< USART外设实例 */
-#define SERIAL_USART_CLK        RCC_APB2Periph_USART1  /**< USART1时钟（挂在APB2总线） */
-#define SERIAL_USART_IRQn       USART1_IRQn            /**< USART1中断号 */
+/* ======================== UART4硬件配置宏 ======================== */
+#define SERIAL_USART            UART4                  /**< UART外设实例 */
+#define SERIAL_USART_CLK        RCC_APB1Periph_UART4   /**< UART4时钟（挂在APB1总线） */
+#define SERIAL_USART_IRQn       UART4_IRQn             /**< UART4中断号 */
 
 #define SERIAL_BAUDRATE         9600                   /**< Modbus RTU波特率 */
 
-#define SERIAL_TX_PIN           GPIO_Pin_9             /**< TX引脚: PA9 */
-#define SERIAL_TX_PORT          GPIOA                  /**< TX端口: GPIOA */
-#define SERIAL_TX_CLK           RCC_AHB1Periph_GPIOA   /**< TX GPIO时钟 */
-#define SERIAL_TX_PinSource     GPIO_PinSource9        /**< TX引脚复用源 */
+#define SERIAL_TX_PIN           GPIO_Pin_10            /**< TX引脚: PC10 */
+#define SERIAL_TX_PORT          GPIOC                  /**< TX端口: GPIOC */
+#define SERIAL_TX_CLK           RCC_AHB1Periph_GPIOC   /**< TX GPIO时钟 */
+#define SERIAL_TX_PinSource     GPIO_PinSource10       /**< TX引脚复用源 */
 
-#define SERIAL_RX_PIN           GPIO_Pin_10            /**< RX引脚: PA10 */
-#define SERIAL_RX_PORT          GPIOA                  /**< RX端口: GPIOA */
-#define SERIAL_RX_CLK           RCC_AHB1Periph_GPIOA   /**< RX GPIO时钟 */
-#define SERIAL_RX_PinSource     GPIO_PinSource10       /**< RX引脚复用源 */
+#define SERIAL_RX_PIN           GPIO_Pin_11            /**< RX引脚: PC11 */
+#define SERIAL_RX_PORT          GPIOC                  /**< RX端口: GPIOC */
+#define SERIAL_RX_CLK           RCC_AHB1Periph_GPIOC   /**< RX GPIO时钟 */
+#define SERIAL_RX_PinSource     GPIO_PinSource11       /**< RX引脚复用源 */
 
-/** @brief 初始化USART1（GPIO、串口参数、接收中断） */
+typedef struct
+{
+    uint32_t rx_frame_count;   /**< Completed RX frames */
+    uint32_t rx_ore_count;     /**< Overrun error count */
+    uint32_t rx_fe_count;      /**< Framing error count */
+    uint32_t rx_ne_count;      /**< Noise error count */
+} SerialDiagSnapshot_t;
+
+/** @brief 初始化UART4（GPIO、串口参数、接收中断） */
 void Serial_Init(void);
 
 /** @brief 发送单字节（阻塞等待发送完成） */
@@ -61,5 +69,8 @@ uint8_t Serial_ValidateCRC(uint8_t *data, uint8_t length);
 
 /** @brief 获取接收快照数据长度 */
 uint8_t Serial_GetRxLength(void);
+
+/** @brief 获取 UART4 接收诊断快照 */
+void Serial_GetDiagSnapshot(SerialDiagSnapshot_t *out);
 
 #endif /* SERIAL_H */

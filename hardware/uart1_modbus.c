@@ -1,8 +1,8 @@
 ﻿/**
  * @file    uart1_modbus.c
- * @brief   USART1 Modbus RTU通信驱动（实现）
+ * @brief   UART4 Modbus RTU通信驱动（实现）
  *
- * 通过USART1（PA9 TX / PA10 RX，9600bps）实现Modbus RTU主站通信。
+ * 通过UART4（PC10 TX / PC11 RX，9600bps）实现Modbus RTU主站通信。
  * 接收基于中断方式，根据功能码动态确定响应帧长度。
  *
  * 数据流：
@@ -16,20 +16,67 @@
 
 #include "uart1_modbus.h"
 
+/* ======================== RS485方向控制引脚定义 ======================== */
+/*
+ * 默认按“RE与DE并在一起，由PA15统一控制”处理：
+ * PA15 = 1 -> 发送模式
+ * PA15 = 0 -> 接收模式
+ */
+#define RS485_DIR_CLK        RCC_AHB1Periph_GPIOA
+#define RS485_DIR_PORT       GPIOA
+#define RS485_DIR_PIN        GPIO_Pin_15
+
 /* ======================== ISR接收缓冲区（volatile，仅ISR写入） ======================== */
-static volatile uint8_t s_rx_buffer[64];     /**< ISR中断接收缓冲区 */
+static volatile uint8_t s_rx_buffer[64];      /**< ISR中断接收缓冲区 */
 static volatile uint8_t s_rx_index = 0;       /**< 当前接收字节索引 */
-static volatile uint8_t s_expected_length = 8; /**< 当前帧的期望长度（动态计算） */
-static volatile uint8_t s_rx_complete = 0;     /**< 接收完成标志（1=有新帧） */
-static volatile uint8_t s_rx_length = 0;       /**< 已接收帧的实际长度 */
+static volatile uint8_t s_expected_length = 8;/**< 当前帧的期望长度（动态计算） */
+static volatile uint8_t s_rx_complete = 0;    /**< 接收完成标志（1=有新帧） */
+static volatile uint8_t s_rx_length = 0;      /**< 已接收帧的实际长度 */
 
 /* 任务侧快照缓冲区：调用 Serial_GetRxFlag() 时从 ISR缓冲区拷贝而来 */
-static uint8_t s_rx_snapshot[64];              /**< 接收帧快照（任务侧安全读取） */
-static uint8_t s_rx_snapshot_length = 0;       /**< 快照帧长度 */
+static uint8_t s_rx_snapshot[64];             /**< 接收帧快照（任务侧安全读取） */
+static uint8_t s_rx_snapshot_length = 0;      /**< 快照帧长度 */
 
+static volatile uint32_t s_rx_frame_count = 0U;
 static volatile uint32_t s_rx_ore_count = 0U;
 static volatile uint32_t s_rx_fe_count = 0U;
 static volatile uint32_t s_rx_ne_count = 0U;
+
+/**
+ * @brief   初始化RS485方向控制脚
+ */
+static void RS485_DirInit(void)
+{
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    RCC_AHB1PeriphClockCmd(RS485_DIR_CLK, ENABLE);
+
+    GPIO_InitStruct.GPIO_Pin = RS485_DIR_PIN;
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(RS485_DIR_PORT, &GPIO_InitStruct);
+
+    /* 默认进入接收模式 */
+    GPIO_ResetBits(RS485_DIR_PORT, RS485_DIR_PIN);
+}
+
+/**
+ * @brief   切换到485发送模式
+ */
+static __inline void RS485_SetTxMode(void)
+{
+    GPIO_SetBits(RS485_DIR_PORT, RS485_DIR_PIN);
+}
+
+/**
+ * @brief   切换到485接收模式
+ */
+static __inline void RS485_SetRxMode(void)
+{
+    GPIO_ResetBits(RS485_DIR_PORT, RS485_DIR_PIN);
+}
 
 static uint8_t Serial_HandleRxErrors(void)
 {
@@ -61,7 +108,6 @@ static uint8_t Serial_HandleRxErrors(void)
     return 1U;
 }
 
-
 /**
  * @brief   计算Modbus RTU CRC16校验值
  *
@@ -74,18 +120,18 @@ static uint8_t Serial_HandleRxErrors(void)
 static uint16_t CalculateCRC16(uint8_t *data, uint8_t length)
 {
     uint16_t crc = 0xFFFF;
-    
-    for (uint8_t i = 0; i < length; i++) 
-		{
+
+    for (uint8_t i = 0; i < length; i++)
+    {
         crc ^= (uint16_t)data[i];
-        for (uint8_t j = 0; j < 8; j++) 
-				{
-            if (crc & 0x0001) 
-						{
+        for (uint8_t j = 0; j < 8; j++)
+        {
+            if (crc & 0x0001)
+            {
                 crc = (crc >> 1) ^ 0xA001;
             }
-						else 
-						{
+            else
+            {
                 crc = crc >> 1;
             }
         }
@@ -93,11 +139,10 @@ static uint16_t CalculateCRC16(uint8_t *data, uint8_t length)
     return crc;
 }
 
-
 /**
- * @brief   初始化USART1串口
+ * @brief   初始化UART4串口
  *
- * 配置PA9(TX)/PA10(RX)为复用功能，设置9600bps，8N1，
+ * 配置PC10(TX)/PC11(RX)为复用功能，设置9600bps，8N1，
  * 启用接收中断（RXNE）。中断优先级设为1（未调用FreeRTOS API，
  * 可高于 configMAX_SYSCALL 阈值）。
  */
@@ -107,7 +152,10 @@ void Serial_Init(void)
     USART_InitTypeDef USART_InitStruct;
 
     RCC_AHB1PeriphClockCmd(SERIAL_TX_CLK | SERIAL_RX_CLK, ENABLE);
-    RCC_APB2PeriphClockCmd(SERIAL_USART_CLK, ENABLE);
+    RCC_APB1PeriphClockCmd(SERIAL_USART_CLK, ENABLE);
+
+    /* 初始化RS485方向控制脚 */
+    RS485_DirInit();
 
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
@@ -116,11 +164,12 @@ void Serial_Init(void)
 
     GPIO_InitStruct.GPIO_Pin = SERIAL_TX_PIN;
     GPIO_Init(SERIAL_TX_PORT, &GPIO_InitStruct);
+
     GPIO_InitStruct.GPIO_Pin = SERIAL_RX_PIN;
     GPIO_Init(SERIAL_RX_PORT, &GPIO_InitStruct);
 
-    GPIO_PinAFConfig(SERIAL_TX_PORT, SERIAL_TX_PinSource, GPIO_AF_USART1);
-    GPIO_PinAFConfig(SERIAL_RX_PORT, SERIAL_RX_PinSource, GPIO_AF_USART1);
+    GPIO_PinAFConfig(SERIAL_TX_PORT, SERIAL_TX_PinSource, GPIO_AF_UART4);
+    GPIO_PinAFConfig(SERIAL_RX_PORT, SERIAL_RX_PinSource, GPIO_AF_UART4);
 
     USART_InitStruct.USART_BaudRate = SERIAL_BAUDRATE;
     USART_InitStruct.USART_WordLength = USART_WordLength_8b;
@@ -136,17 +185,24 @@ void Serial_Init(void)
     NVIC_SetPriority(SERIAL_USART_IRQn, 1);  /* ISR 不调用 FreeRTOS API，可高于 configMAX_SYSCALL 阈值 */
 
     USART_Cmd(SERIAL_USART, ENABLE);
+
+    /* 串口初始化完成后，默认保持接收模式 */
+    RS485_SetRxMode();
 }
 
-
 /**
- * @brief   发送单字节（阻塞等待TXE标志）
+ * @brief   发送单字节（阻塞）
  * @param   byte  待发送字节
  */
 void Serial_SendByte(uint8_t byte)
 {
+    RS485_SetTxMode();
+
     USART_SendData(SERIAL_USART, byte);
-    while(USART_GetFlagStatus(SERIAL_USART, USART_FLAG_TXE) == RESET);
+    while (USART_GetFlagStatus(SERIAL_USART, USART_FLAG_TXE) == RESET);
+    while (USART_GetFlagStatus(SERIAL_USART, USART_FLAG_TC) == RESET);
+
+    RS485_SetRxMode();
 }
 
 /**
@@ -156,10 +212,25 @@ void Serial_SendByte(uint8_t byte)
  */
 void Serial_SendArray(uint8_t *array, uint16_t length)
 {
-    for(uint16_t i = 0; i < length; i++) 
-		{
-        Serial_SendByte(array[i]);
+    if ((array == NULL) || (length == 0U))
+    {
+        return;
     }
+
+    /* 发前切到发送模式 */
+    RS485_SetTxMode();
+
+    for (uint16_t i = 0; i < length; i++)
+    {
+        USART_SendData(SERIAL_USART, array[i]);
+        while (USART_GetFlagStatus(SERIAL_USART, USART_FLAG_TXE) == RESET);
+    }
+
+    /* 一定要等待最后1字节真正发送完成 */
+    while (USART_GetFlagStatus(SERIAL_USART, USART_FLAG_TC) == RESET);
+
+    /* 发完切回接收模式，准备收从机响应 */
+    RS485_SetRxMode();
 }
 
 /**
@@ -172,11 +243,10 @@ void Serial_SendArray(uint8_t *array, uint16_t length)
  */
 void Serial_SendPacket(uint8_t *packet)
 {
-    // 自动计算并添加CRC
     uint16_t crc = CalculateCRC16(packet, 6);
     packet[6] = crc & 0xFF;
     packet[7] = (crc >> 8) & 0xFF;
-    
+
     Serial_SendArray(packet, 8);
 }
 
@@ -192,13 +262,13 @@ uint8_t Serial_GetRxFlag(void)
 {
     uint8_t len;
 
-    if(!s_rx_complete)
+    if (!s_rx_complete)
     {
         return 0;
     }
 
     /* Take a snapshot of the received frame while IRQ is disabled
-       so the ISR cannot modify the buffer concurrently.           */
+       so the ISR cannot modify the buffer concurrently. */
     NVIC_DisableIRQ(SERIAL_USART_IRQn);
     len = s_rx_length;
     if (len > sizeof(s_rx_snapshot))
@@ -231,6 +301,27 @@ uint8_t Serial_GetRxLength(void)
     return s_rx_snapshot_length;
 }
 
+void Serial_GetDiagSnapshot(SerialDiagSnapshot_t *out)
+{
+    uint32_t primask;
+
+    if (out == NULL)
+    {
+        return;
+    }
+
+    primask = __get_PRIMASK();
+    __disable_irq();
+    out->rx_frame_count = s_rx_frame_count;
+    out->rx_ore_count = s_rx_ore_count;
+    out->rx_fe_count = s_rx_fe_count;
+    out->rx_ne_count = s_rx_ne_count;
+    if ((primask & 1U) == 0U)
+    {
+        __enable_irq();
+    }
+}
+
 /**
  * @brief   清空接收缓冲区和状态标志
  *
@@ -254,25 +345,25 @@ void Serial_ClearRxBuffer(void)
  */
 uint8_t Serial_ValidateCRC(uint8_t *data, uint8_t length)
 {
-    if(length < 2) return 0;
-    
-    uint16_t received_crc = (data[length-1] << 8) | data[length-2];
-    uint16_t calculated_crc = CalculateCRC16(data, length-2);
-    
+    if (length < 2) return 0;
+
+    uint16_t received_crc = (data[length - 1] << 8) | data[length - 2];
+    uint16_t calculated_crc = CalculateCRC16(data, length - 2);
+
     return (received_crc == calculated_crc);
 }
 
 /**
- * @brief   USART1接收中断服务函数
+ * @brief   UART4接收中断服务函数
  *
  * 工作流程：
  *   1. 将接收字节存入 s_rx_buffer
- *   2. 接收第2字节时，根据功能码凝定期望长度：
+ *   2. 接收第2字节时，根据功能码确定期望长度：
  *      - 0x03/0x04（读寄存器）：先设5，等第3字节确定实际长度
  *      - 0x06（写单寄存器）：固定8字节
  *   3. 接收字节数达到期望长度时，置位完成标志
  */
-void USART1_IRQHandler(void)
+void UART4_IRQHandler(void)
 {
     uint8_t rx_data;
 
@@ -300,8 +391,16 @@ void USART1_IRQHandler(void)
 
     if (s_rx_index == 2U)
     {
-        switch (s_rx_buffer[1])
+        if ((s_rx_buffer[1] & 0x80U) != 0U)
         {
+            /* Modbus exception response:
+               addr + func|0x80 + ex-code + CRC16 = 5 bytes */
+            s_expected_length = 5U;
+        }
+        else
+        {
+            switch (s_rx_buffer[1])
+            {
             case 0x04:
             case 0x03:
                 s_expected_length = 5U;
@@ -312,6 +411,7 @@ void USART1_IRQHandler(void)
             default:
                 s_expected_length = 8U;
                 break;
+            }
         }
     }
 
@@ -324,6 +424,7 @@ void USART1_IRQHandler(void)
     {
         s_rx_complete = 1U;
         s_rx_length = s_rx_index;
+        s_rx_frame_count++;
         s_rx_index = 0U;
     }
 
